@@ -150,7 +150,7 @@ madm <- function(x){
 }
 
 clean_iris %>%
-  summarise(across(where(is.numeric)),list(Media = ~mean(., na.rm = TRUE), desv_tip = ~ sd(., na.rm = TRUE),MADM= ~madm(.), IQR = ~ IQR(., na.rm = TRUE)))
+  summarise(across(where(is.numeric),list(Media = ~mean(., na.rm = TRUE), desv_tip = ~ sd(., na.rm = TRUE),MADM= ~madm(.), IQR = ~ IQR(., na.rm = TRUE))))
 ```
 
 
@@ -169,15 +169,54 @@ Escribe una función que detecte los outliers de un vector $x$ para cada uno de 
 ```{r , include = FALSE}
 # Regla 3 sigma
 
+sigma3 <- function(x){
+  media <- mean(x, na.rm =TRUE)
+  desv <- sd(x, na.rm = TRUE)
+  
+  lim_sup <- media + 3*desv
+  lim_inf <- media - 3*desv
+  
+  return( x> lim_inf & x< lim_sup)
+}
 
 # Identificador Hampel
 
+hampel <- function(x){
+  
+  MADM <- madm(x)
+  mediana <- median(x, na.rm = TRUE)
+  
+  lim_sup <- mediana + 3*MADM
+  lim_inf <- mediana - 3*MADM
+  
+  return(x>lim_inf & x <lim_sup)
+}
 
 
 # Regla boxplot
 
+boxplot <- function(x){
+  
+  Q1 <- quantile(x,0.25, na.rm =TRUE)
+  Q3 <- quantile(x,0.75, na.rm = TRUE)
+  IQR <- IQR(x, na.rm = TRUE)
+  
+  lim_sup <- Q3 + 3*IQR
+  lim_inf <- Q1 - 3*IQR
+  
+  return(x>lim_inf & x< lim_sup)
+}
 
 # Percentiles
+
+percentiles <- function(x){
+  percentil <- quantile(x, prob= c(0.05,0.95), na.rm =TRUE)
+  lim_sup <- percentil[2]
+  lim_inf <- percentil[1]
+  
+  return( x>lim_inf & x<lim_sup)
+}
+
 
 ```
 
@@ -189,7 +228,8 @@ Nota: podría extenderse la aplicación a todas las variables numéricas usando 
 
 ```{r Solucion ejercicio 6, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
 
-
+clean_iris %>%
+  mutate( across(where(is.numeric), list(Sigma = sigma3, hampel=hampel, boxplot=boxplot, percentiles = percentiles)))
 
 ```
 
@@ -201,7 +241,8 @@ En los métodos de detección de outliers analizados, examina los resultados com
   * Los valores etiquetados como outliers (ordenados de menor a mayor).
 
 ```{r Solucion ejercicio 7, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+clean_iris %>%
+  summarise(ends_with("Sigma"),~sum(.))
 ```
 
 ## Ejercicio 8: Representación gráfica
