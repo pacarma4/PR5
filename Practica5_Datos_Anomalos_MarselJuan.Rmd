@@ -176,7 +176,7 @@ sigma3 <- function(x){
   lim_sup <- media + 3*desv
   lim_inf <- media - 3*desv
   
-  return( x> lim_inf & x< lim_sup)
+  return( x> lim_inf & x<lim_sup)
 }
 
 # Identificador Hampel
@@ -204,7 +204,7 @@ boxplot <- function(x){
   lim_sup <- Q3 + 3*IQR
   lim_inf <- Q1 - 3*IQR
   
-  return(x>lim_inf & x< lim_sup)
+  return(x>lim_inf & x<lim_sup)
 }
 
 # Percentiles
@@ -228,9 +228,10 @@ Nota: podría extenderse la aplicación a todas las variables numéricas usando 
 
 ```{r Solucion ejercicio 6, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
 
-clean_iris %>%
+clean_iris <-clean_iris %>%
   mutate( across(where(is.numeric), list(Sigma = sigma3, hampel=hampel, boxplot=boxplot, percentiles = percentiles)))
 
+clean_iris
 ```
 
 ## Ejercicio 7: Comparativa de los métodos de detección de outliers
@@ -242,7 +243,7 @@ En los métodos de detección de outliers analizados, examina los resultados com
 
 ```{r Solucion ejercicio 7, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
 clean_iris %>%
-  summarise(ends_with("Sigma"),~sum(.))
+  summarise(across(contains("_"),~sum(!.,na.rm = TRUE)))
 ```
 
 ## Ejercicio 8: Representación gráfica
@@ -252,7 +253,11 @@ Representa gráficamente los datos de `Petal.Length` (distribución de puntos en
 Nota: usa en `geom_point` con la opción `position='jitter'` para mejorar la legibilidad del gráfico.
 
 ```{r Solucion ejercicio 8, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+clean_iris %>%
+  select(Petal.Length,starts_with("Petal.Length")) %>%
+  pivot_longer(cols = -Petal.Length, names_to = "Método", values_to = "No_es_Outlier") %>%
+  ggplot(aes(x=Método, y = Petal.Length)) + 
+  geom_point(aes(color=No_es_Outlier), position = "jitter")
 ```
 
 # Imputación de datos
@@ -270,13 +275,16 @@ Se puede realizar una imputación generalizada (usando todos los valores de la v
   * Imputa los missing data en `Petal.Length` empleando la media. Nota: Puedes reemplazar los valores vacios usando `mutate` con `ifelse` creando una nueva variable `Petal.Length1`.
 
 ```{r Solucion ejercicio 9a, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+dirty_iris %>% 
+  mutate(Petal.Length1 = ifelse(is.na(Petal.Length),mean(Petal.Length, na.rm=TRUE),Petal.Length))
 ```
 
   * Imputa los missing data en `Petal.Length` empleando en esta ocasión la media para cada tipo de `Species` (usar`group_by` y `mutate`) creando una nueva variable `Petal.Length2`.
 
 ```{r Solucion ejercicio 9b, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+dirty_iris %>%
+  group_by(Species) %>%
+  mutate(Petal.Length2 =ifelse(is.na(Petal.Length),mean(Petal.Length, na.rm=TRUE),Petal.Length))
 
 ```
 
